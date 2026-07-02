@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResumeAI Score — Free AI Resume Grader</title>
+    <meta name="description" content="Get your resume scored by AI instantly. Free resume grader with actionable feedback on impact, clarity, keywords, and ATS compatibility.">
+    <meta name="keywords" content="resume grader, AI resume score, resume checker, ATS checker, resume feedback, free resume review">
+    <meta property="og:title" content="ResumeAI Score — Free AI Resume Grader">
+    <meta property="og:description" content="Paste your resume and get an instant AI score with actionable feedback.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+    <style>
+        :root {
+            --bg: #0a0a0b;
+            --surface: #141416;
+            --surface-2: #1c1c20;
+            --border: #2a2a30;
+            --text: #e8e8ed;
+            --text-muted: #8888a0;
+            --accent: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.3);
+            --grade-a: #22c55e;
+            --grade-b: #84cc16;
+            --grade-c: #eab308;
+            --grade-d: #f97316;
+            --grade-f: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #10b981, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .input-section {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .input-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 250px;
+            padding: 1rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+        textarea::placeholder { color: var(--text-muted); }
+
+        .job-target {
+            margin-top: 1rem;
+        }
+
+        .job-target input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .job-target input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+        .job-target input::placeholder { color: var(--text-muted); }
+
+        .api-section {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .api-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .api-row select, .api-row input {
+            padding: 0.6rem 0.75rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.85rem;
+        }
+
+        .api-row select { min-width: 140px; }
+        .api-row input { flex: 1; min-width: 200px; }
+        .api-row input:focus, .api-row select:focus { outline: none; border-color: var(--accent); }
+
+        .btn-score {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-score:hover { transform: translateY(-1px); box-shadow: 0 8px 25px var(--accent-glow); }
+        .btn-score:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .loading.active { display: block; }
+
+        .loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        .results {
+            display: none;
+        }
+
+        .results.active { display: block; }
+
+        .score-hero {
+            text-align: center;
+            padding: 2rem;
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .big-score {
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        .score-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-summary {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .score-card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .score-card .card-score {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .score-card .card-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        .feedback-section {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .feedback-section h3 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .feedback-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+            line-height: 1.5;
+        }
+
+        .feedback-item:last-child { border-bottom: none; }
+
+        .feedback-item .severity {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-right: 0.5rem;
+        }
+
+        .severity.critical { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .severity.warning { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+        .severity.tip { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+
+        .strengths-list, .improvements-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .strengths-list li, .improvements-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .strengths-list li::before { content: "✅"; position: absolute; left: 0; }
+        .improvements-list li::before { content: "⚠️"; position: absolute; left: 0; }
+
+        /* Cross-links */
+        .more-tools {
+            text-align: center;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .more-tools label {
+            display: block;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .tools-row {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tool-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: opacity 0.2s;
+        }
+
+        .tool-link:hover { opacity: 0.8; }
+
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            padding: 1.5rem 0;
+        }
+
+        .footer a { color: var(--accent); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+
+        .error-msg {
+            display: none;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            color: #ef4444;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .error-msg.active { display: block; }
+
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 1.8rem; }
+            .big-score { font-size: 3.5rem; }
+            .scores-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>📄 ResumeAI Score</h1>
+            <p class="subtitle">Free AI-powered resume grader with actionable feedback</p>
+        </div>
+
+        <div class="input-section">
+            <label>Paste Your Resume</label>
+            <textarea id="resumeText" placeholder="Paste your resume text here...&#10;&#10;JOHN DOE&#10;Software Engineer | john@example.com | (555) 123-4567&#10;&#10;EXPERIENCE&#10;Senior Software Engineer — Google (2021–Present)&#10;• Led migration of payment service to microservices, reducing latency by 40%&#10;• Mentored 3 junior engineers through onboarding program&#10;..."></textarea>
+            <div class="job-target">
+                <label>Target Role (optional — improves accuracy)</label>
+                <input type="text" id="targetRole" placeholder="e.g. Senior Product Manager at Stripe, Data Scientist, Frontend Engineer">
+            </div>
+        </div>
+
+        <div class="api-section">
+            <label>AI Provider</label>
+            <div class="api-row">
+                <select id="provider">
+                    <option value="anthropic">Anthropic Claude</option>
+                    <option value="openai">OpenAI GPT-4</option>
+                </select>
+                <input type="password" id="apiKey" placeholder="Paste your API key">
+            </div>
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <button class="btn-score" id="scoreBtn" onclick="scoreResume()">
+            Score My Resume →
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing your resume across 6 dimensions...</p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="score-hero" id="scoreHero">
+                <div class="big-score" id="bigScore">--</div>
+                <div class="score-label" id="scoreLabel">--</div>
+                <div class="score-summary" id="scoreSummary">--</div>
+            </div>
+
+            <div class="scores-grid" id="scoresGrid"></div>
+
+            <div class="feedback-section" id="strengthsSection">
+                <h3>💪 Strengths</h3>
+                <ul class="strengths-list" id="strengthsList"></ul>
+            </div>
+
+            <div class="feedback-section" id="improvementsSection">
+                <h3>🔧 Key Improvements</h3>
+                <ul class="improvements-list" id="improvementsList"></ul>
+            </div>
+
+            <div class="feedback-section" id="detailedFeedback">
+                <h3>📋 Detailed Feedback</h3>
+                <div id="feedbackItems"></div>
+            </div>
+        </div>
+
+        <div class="more-tools">
+            <label>More Free AI Tools</label>
+            <div class="tools-row">
+                <a href="https://michael-ami-01.github.io/coldscore/" class="tool-link" target="_blank">📧 ColdScore</a>
+                <a href="https://michael-ami-01.github.io/promptforge/" class="tool-link" target="_blank">⚡ PromptForge</a>
+                <a href="https://michael-ami-01.github.io/ai-council/" class="tool-link" target="_blank">🧠 AI Council</a>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Built by <a href="https://github.com/mzio" target="_blank">Michael Zhang</a> · Free forever · No signup required</p>
+            <p style="margin-top: 0.3rem;">Your resume never leaves your browser (except to the AI for grading).</p>
+        </footer>
+    </div>
+
+    <script>
+    const PROXY_URL = '';
+
+    const SYSTEM_PROMPT = `You are an expert resume reviewer and career coach with 20 years of experience in recruiting at top tech companies, consulting firms, and startups. You've reviewed 50,000+ resumes.
+
+Score this resume on a 0-100 scale across these 6 dimensions:
+1. **Impact & Results** (0-100): Are achievements quantified? Do bullet points show results, not just responsibilities?
+2. **Clarity & Structure** (0-100): Is the resume well-organized, scannable, and concise?
+3. **Keywords & Relevance** (0-100): Does it include industry-relevant keywords? Would it pass ATS filters?
+4. **Experience Presentation** (0-100): Are roles and progression presented compellingly?
+5. **Technical Strength** (0-100): Are technical skills, tools, and technologies well-represented?
+6. **Overall Polish** (0-100): Grammar, formatting consistency, professional tone?
+
+Return your response as JSON (no markdown, no code fences):
+{
+  "overall_score": <number 0-100>,
+  "overall_grade": "<A+/A/A-/B+/B/B-/C+/C/C-/D/F>",
+  "one_line_verdict": "<one sentence summary>",
+  "scores": {
+    "impact_results": <0-100>,
+    "clarity_structure": <0-100>,
+    "keywords_relevance": <0-100>,
+    "experience_presentation": <0-100>,
+    "technical_strength": <0-100>,
+    "overall_polish": <0-100>
+  },
+  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "improvements": ["<improvement 1>", "<improvement 2>", "<improvement 3>"],
+  "detailed_feedback": [
+    {"severity": "critical|warning|tip", "text": "<specific actionable feedback>"},
+    ...
+  ]
+}
+
+Be honest and specific. Don't inflate scores — most resumes are 50-70. A 90+ should be genuinely exceptional.`;
+
+    function getGradeColor(score) {
+        if (score >= 90) return 'var(--grade-a)';
+        if (score >= 80) return 'var(--grade-b)';
+        if (score >= 70) return 'var(--grade-c)';
+        if (score >= 60) return 'var(--grade-d)';
+        return 'var(--grade-f)';
+    }
+
+    async function callAPI(provider, apiKey, resumeText, targetRole) {
+        const roleContext = targetRole ? `\n\nTarget role: ${targetRole}` : '';
+        const userMessage = `Please review and score this resume:
+
+${resumeText}${roleContext}`;
+
+        if (provider === 'anthropic') {
+            const url = PROXY_URL || 'https://api.anthropic.com/v1/messages';
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-dangerous-direct-browser-access': 'true'
+                },
+                body: JSON.stringify({
+                    model: 'claude-sonnet-4-20250514',
+                    max_tokens: 2000,
+                    system: SYSTEM_PROMPT,
+                    messages: [{ role: 'user', content: userMessage }]
+                })
+            });
+            if (!resp.ok) throw new Error(`API error: ${resp.status} ${resp.statusText}`);
+            const data = await resp.json();
+            return data.content[0].text;
+        } else {
+            const url = PROXY_URL || 'https://api.openai.com/v1/chat/completions';
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o',
+                    max_tokens: 2000,
+                    messages: [
+                        { role: 'system', content: SYSTEM_PROMPT },
+                        { role: 'user', content: userMessage }
+                    ]
+                })
+            });
+            if (!resp.ok) throw new Error(`API error: ${resp.status} ${resp.statusText}`);
+            const data = await resp.json();
+            return data.choices[0].message.content;
+        }
+    }
+
+    function renderResults(result) {
+        const color = getGradeColor(result.overall_score);
+
+        document.getElementById('bigScore').textContent = result.overall_score;
+        document.getElementById('bigScore').style.color = color;
+        document.getElementById('scoreLabel').textContent = result.overall_grade;
+        document.getElementById('scoreLabel').style.color = color;
+        document.getElementById('scoreSummary').textContent = result.one_line_verdict;
+
+        const scoreLabels = {
+            impact_results: 'Impact & Results',
+            clarity_structure: 'Clarity & Structure',
+            keywords_relevance: 'Keywords & ATS',
+            experience_presentation: 'Experience',
+            technical_strength: 'Technical',
+            overall_polish: 'Polish'
+        };
+
+        const grid = document.getElementById('scoresGrid');
+        grid.innerHTML = '';
+        for (const [key, label] of Object.entries(scoreLabels)) {
+            const val = result.scores[key];
+            const c = getGradeColor(val);
+            grid.innerHTML += `<div class="score-card">
+                <div class="card-score" style="color:${c}">${val}</div>
+                <div class="card-label">${label}</div>
+            </div>`;
+        }
+
+        const strengthsList = document.getElementById('strengthsList');
+        strengthsList.innerHTML = result.strengths.map(s => `<li>${s}</li>`).join('');
+
+        const improvementsList = document.getElementById('improvementsList');
+        improvementsList.innerHTML = result.improvements.map(s => `<li>${s}</li>`).join('');
+
+        const feedbackItems = document.getElementById('feedbackItems');
+        feedbackItems.innerHTML = result.detailed_feedback.map(f =>
+            `<div class="feedback-item"><span class="severity ${f.severity}">${f.severity}</span>${f.text}</div>`
+        ).join('');
+
+        document.getElementById('results').classList.add('active');
+    }
+
+    async function scoreResume() {
+        const resumeText = document.getElementById('resumeText').value.trim();
+        const targetRole = document.getElementById('targetRole').value.trim();
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const provider = document.getElementById('provider').value;
+        const errorMsg = document.getElementById('errorMsg');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const btn = document.getElementById('scoreBtn');
+
+        errorMsg.classList.remove('active');
+        results.classList.remove('active');
+
+        if (!resumeText) {
+            errorMsg.textContent = 'Please paste your resume text.';
+            errorMsg.classList.add('active');
+            return;
+        }
+
+        if (!apiKey && !PROXY_URL) {
+            errorMsg.textContent = 'Please enter your API key, or wait for proxy support.';
+            errorMsg.classList.add('active');
+            return;
+        }
+
+        btn.disabled = true;
+        loading.classList.add('active');
+
+        try {
+            const raw = await callAPI(provider, apiKey, resumeText, targetRole);
+            let cleaned = raw.trim();
+            if (cleaned.startsWith('```')) {
+                cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+            }
+            const result = JSON.parse(cleaned);
+            renderResults(result);
+        } catch (err) {
+            errorMsg.textContent = `Error: ${err.message}`;
+            errorMsg.classList.add('active');
+        } finally {
+            btn.disabled = false;
+            loading.classList.remove('active');
+        }
+    }
+    </script>
+</body>
+</html>
