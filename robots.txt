@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://michael-ami-01.github.io/resume-ai-score/sitemap.xml
